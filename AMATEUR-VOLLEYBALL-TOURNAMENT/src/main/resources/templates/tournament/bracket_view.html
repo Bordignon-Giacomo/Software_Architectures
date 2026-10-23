@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tournament Bracket - View Only</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .bracket-container {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 30px;
+            padding: 30px 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        .stage-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            min-width: 280px;
+            padding: 0 15px;
+        }
+        .stage-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        .match-card {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            background-color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .match-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .match-header {
+            background-color: #f8f9fa;
+            padding: 8px 15px;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .match-index {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+        .team-row {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .team-row:not(:last-child) {
+            border-bottom: 1px solid #dee2e6;
+        }
+        .team-name {
+            font-weight: 500;
+            font-size: 1rem;
+            color: #212529;
+        }
+
+        /* State classes */
+        .team-row.winner {
+            background: linear-gradient(to right, #d4edda 0%, #ffffff 100%);
+            border-left: 4px solid #28a745;
+        }
+        .team-row.winner .team-name {
+            color: #155724;
+            font-weight: 700;
+        }
+        .team-row.winner .winner-icon {
+            color: #28a745;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+
+        .team-row.waiting {
+            background-color: #fff9e6;
+            border-left: 4px solid #ffc107;
+        }
+        .team-row.waiting .team-name {
+            color: #856404;
+            font-style: italic;
+        }
+
+        .team-row.loser {
+            opacity: 0.6;
+            background-color: #f8f9fa;
+        }
+        .team-row.loser .team-name {
+            color: #6c757d;
+            text-decoration: line-through;
+        }
+
+        .badge-bye {
+            background-color: #6c757d;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .match-score {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #667eea;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .match-info-section {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-top: 1px solid #dee2e6;
+            font-size: 0.85rem;
+        }
+
+        .match-info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .match-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .match-info-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .stage-connector {
+            border-right: 2px dashed #dee2e6;
+            margin-right: 15px;
+        }
+
+        .legend {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 25px;
+            margin-bottom: 10px;
+        }
+
+        .legend-box {
+            width: 40px;
+            height: 30px;
+            border-radius: 5px;
+            margin-right: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .legend-winner {
+            background: linear-gradient(to right, #d4edda 0%, #ffffff 100%);
+            border-left: 4px solid #28a745;
+        }
+
+        .legend-waiting {
+            background-color: #fff9e6;
+            border-left: 4px solid #ffc107;
+        }
+
+        .legend-loser {
+            background-color: #f8f9fa;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-dark bg-dark mb-0">
+    <div class="container">
+        <a href="/" class="btn btn-outline-secondary position-absolute top-0 start-0 m-3">
+            <i class="bi bi-arrow-left"></i> Home
+        </a>
+        <a class="navbar-brand fw-bold" href="/">🏐 Volleyball Tournament</a>
+        <div class="d-flex align-items-center gap-3">
+            <span id="nav-user" class="text-white"></span>
+            <button onclick="logout()" class="btn btn-danger btn-sm" id="logout-btn" style="display: none;">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO SECTION -->
+<section class="hero-section">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 id="tournament-name" class="mb-2 fw-bold">Tournament Bracket</h2>
+                <p id="tournament-info" class="mb-0 opacity-75">
+                    <span th:text="${tournament.teams != null ? tournament.teams.size() : 0}">0</span> Teams •
+                    <span th:text="${tournament.matches != null ? tournament.matches.size() : 0}">0</span> Total Matches
+                </p>
+            </div>
+            <div>
+                <a href="#" onclick="goBack()" class="btn btn-light">
+                    ← Back to Tournament
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container-fluid py-4">
+    <!-- LOADING -->
+    <div id="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-3">Loading bracket...</p>
+    </div>
+
+    <!-- BRACKET VIEW -->
+    <div id="bracket-view" style="display: none;">
+
+        <!-- LEGEND -->
+        <div class="legend">
+            <h5 class="mb-3">Legend</h5>
+            <div class="d-flex flex-wrap">
+                <div class="legend-item">
+                    <div class="legend-box legend-winner"></div>
+                    <span>🏆 Winner</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box legend-waiting"></div>
+                    <span>⏳ Waiting for Opponent</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box legend-loser"></div>
+                    <span>❌ Eliminated</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BRACKET CONTAINER (filled by JavaScript) -->
+        <div class="bracket-container">
+            <!-- Bracket will be rendered here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let token = localStorage.getItem('jwt_token');
+    let user = null;
+
+    try {
+        const userStr = localStorage.getItem('user_info');
+        if (userStr) {
+            user = JSON.parse(userStr);
+        }
+    } catch (e) {
+        console.error('Error parsing user info:', e);
+    }
+
+    // If user is ADMIN, redirect to admin_bracket page
+    if (user && user.role === 'ADMIN') {
+        const pathParts = window.location.pathname.split('/');
+        const tournamentId = pathParts[pathParts.length - 2];
+        console.log('Admin detected, redirecting to admin_bracket...');
+        window.location.href = `/tournament/${tournamentId}/admin_bracket`;
+    }
+
+    if (user) {
+        document.getElementById('nav-user').textContent = `Hello, ${user.username}!`;
+        document.getElementById('logout-btn').style.display = 'block';
+    }
+
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user_info');
+        window.location.href = '/users/login';
+    }
+
+    function goBack() {
+        const pathParts = window.location.pathname.split('/');
+        const tournamentId = pathParts[pathParts.length - 2];
+
+        // Check the user role
+        if (user && user.role === 'REFEREE') {
+            window.location.href = `/tournament/${tournamentId}/referee_view`;
+        } else {
+            window.location.href = `/tournament/${tournamentId}/view`;
+        }
+    }
+
+    // Get tournament ID from URL
+    const pathParts = window.location.pathname.split('/');
+    const tournamentId = pathParts[pathParts.length - 2]; // Assumes /tournament/{id}/bracket
+
+    async function loadBracket() {
+        try {
+            const headers = {};
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            const response = await fetch('/api/tournaments/all', { headers });
+
+            if (!response.ok) throw new Error('Error loading tournament');
+
+            const tournaments = await response.json();
+            const tournament = tournaments.find(t => t.id === tournamentId);
+
+            if (!tournament) {
+                throw new Error('Tournament not found');
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('bracket-view').style.display = 'block';
+
+            renderBracket(tournament);
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerHTML =
+                `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+
+    function renderBracket(tournament) {
+        // Update header
+        document.getElementById('tournament-name').textContent = tournament.tournamentName;
+
+        // Group matches by stage
+        const matchesByStage = {};
+        tournament.matches?.forEach(match => {
+            if (!matchesByStage[match.stage]) {
+                matchesByStage[match.stage] = [];
+            }
+            matchesByStage[match.stage].push(match);
+        });
+
+        // Render bracket
+        const container = document.querySelector('.bracket-container');
+        container.innerHTML = '';
+
+        const sortedStages = Object.keys(matchesByStage).sort((a, b) => a - b);
+
+        sortedStages.forEach((stage, index) => {
+            const stageMatches = matchesByStage[stage].sort((a, b) => a.matchIndex - b.matchIndex);
+
+            const stageName = getStageName(stage, tournament.teams?.length);
+            const isLastStage = index === sortedStages.length - 1;
+
+            const stageColumn = createStageColumn(stage, stageName, stageMatches, isLastStage);
+            container.appendChild(stageColumn);
+        });
+    }
+
+    function getStageName(stage, teamCount) {
+        const stageNum = parseInt(stage);
+        if (stageNum === 1) {
+            if (teamCount === 16) return 'Round of 16';
+            if (teamCount === 8) return 'Quarterfinals';
+            if (teamCount === 4) return 'Semifinals';
+            if (teamCount === 2) return 'Final';
+            return `Round ${stageNum}`;
+        } else if (stageNum === 2) {
+            if (teamCount === 16) return 'Quarterfinals';
+            if (teamCount === 8) return 'Semifinals';
+            if (teamCount === 4) return 'Final';
+            return `Round ${stageNum}`;
+        } else if (stageNum === 3) {
+            if (teamCount === 16) return 'Semifinals';
+            if (teamCount === 8) return 'Final';
+            return `Round ${stageNum}`;
+        } else if (stageNum === 4) {
+            return 'Final';
+        }
+        return `Round ${stageNum}`;
+    }
+
+    function createStageColumn(stage, stageName, matches, isLastStage) {
+        const column = document.createElement('div');
+        column.className = `stage-column ${!isLastStage ? 'stage-connector' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'stage-header';
+        header.innerHTML = `<h5 class="mb-0">${stageName}</h5>`;
+        column.appendChild(header);
+
+        matches.forEach(match => {
+            const matchCard = createMatchCard(match);
+            column.appendChild(matchCard);
+        });
+
+        return column;
+    }
+
+    function createMatchCard(match) {
+        const card = document.createElement('div');
+        card.className = 'match-card';
+
+        const isMatchReady = match.teamA && match.teamA !== '' && match.teamB && match.teamB !== '';
+        const hasWinner = match.winner && match.winner !== '';
+
+        // Match header
+        const header = document.createElement('div');
+        header.className = 'match-header';
+        header.innerHTML = `<span class="match-index">Match #${match.matchIndex}</span>`;
+        card.appendChild(header);
+
+        // Team A
+        const teamARow = createTeamRow(
+            match.teamA,
+            match.scoreA,
+            hasWinner && match.winner === match.teamA,
+            hasWinner && match.winner !== match.teamA,
+            !isMatchReady
+        );
+        card.appendChild(teamARow);
+
+        // Team B
+        const teamBRow = createTeamRow(
+            match.teamB,
+            match.scoreB,
+            hasWinner && match.winner === match.teamB,
+            hasWinner && match.winner !== match.teamB,
+            !isMatchReady
+        );
+        card.appendChild(teamBRow);
+
+        // Match info section
+        const infoSection = document.createElement('div');
+        infoSection.className = 'match-info-section';
+
+        let infoHTML = '';
+
+        if (match.matchDate) {
+            const date = new Date(match.matchDate);
+            const formattedDate = date.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            infoHTML += `<div class="match-info-item"><i class="bi bi-calendar-event text-primary"></i><span>${formattedDate}</span></div>`;
+        }
+
+        if (match.stadium) {
+            infoHTML += `<div class="match-info-item"><i class="bi bi-geo-alt text-danger"></i><span>${match.stadium}</span></div>`;
+        }
+
+        if (match.referee) {
+            infoHTML += `<div class="match-info-item"><i class="bi bi-person-badge text-success"></i><span>${match.referee}</span></div>`;
+        }
+
+        if (infoHTML !== '') {
+            infoSection.innerHTML = infoHTML;
+            card.appendChild(infoSection);
+        }
+
+        return card;
+    }
+
+    function createTeamRow(teamName, score, isWinner, isLoser, isWaiting) {
+        const row = document.createElement('div');
+        row.className = 'team-row';
+
+        if (isWinner) {
+            row.classList.add('winner');
+        } else if (isLoser) {
+            row.classList.add('loser');
+        } else if (isWaiting || !teamName || teamName === '') {
+            row.classList.add('waiting');
+        }
+
+        const teamNameSpan = document.createElement('span');
+        teamNameSpan.className = 'team-name';
+        teamNameSpan.textContent = teamName && teamName !== '' ? teamName : 'Waiting...';
+
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'match-score';
+
+        if (teamName === 'BYE') {
+            const byeBadge = document.createElement('span');
+            byeBadge.className = 'badge-bye';
+            byeBadge.textContent = 'BYE';
+            row.appendChild(teamNameSpan);
+            row.appendChild(byeBadge);
+        } else {
+            scoreSpan.textContent = score || '0';
+            row.appendChild(teamNameSpan);
+
+            if (isWinner) {
+                const winnerIcon = document.createElement('span');
+                winnerIcon.className = 'winner-icon';
+                winnerIcon.textContent = '🏆';
+                row.appendChild(winnerIcon);
+            }
+
+            row.appendChild(scoreSpan);
+        }
+
+        return row;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadBracket);
+</script>
+
+</body>
+</html>
